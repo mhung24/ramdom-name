@@ -2,7 +2,7 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <title>Bảng 100 Tên và SĐT Ngẫu Nhiên</title>
+    <title>Bảng Dữ Liệu Ngẫu Nhiên Nâng Cao</title>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -19,11 +19,12 @@
         margin-top: 20px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         background-color: white;
+        font-size: 0.9em;
       }
       th,
       td {
         border: 1px solid #ddd;
-        padding: 12px;
+        padding: 10px;
         text-align: left;
       }
       th {
@@ -37,10 +38,9 @@
         background-color: #e74c3c;
         color: white;
         border: none;
-        padding: 8px 12px;
+        padding: 5px 10px;
         cursor: pointer;
         border-radius: 4px;
-        font-weight: bold;
         transition: background-color 0.3s;
       }
       .delete-btn:hover {
@@ -73,10 +73,24 @@
       #deleteAllBtn:hover {
         background-color: #e67e22;
       }
+      .copy-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .copy-icon {
+        cursor: pointer;
+        margin-left: 8px;
+        font-size: 1.1em;
+        color: #3498db;
+      }
+      .copy-icon:hover {
+        color: #2980b9;
+      }
     </style>
   </head>
   <body>
-    <h1>Danh Sách Ngẫu Nhiên</h1>
+    <h1>Danh Sách Ngẫu Nhiên (100 Dòng - Họ và Tên Duy Nhất)</h1>
 
     <div class="control-btns">
       <button id="regenerateBtn" onclick="regenerateData()">
@@ -91,7 +105,8 @@
       <thead>
         <tr>
           <th>STT</th>
-          <th>Tên Đầy Đủ</th>
+          <th>Tên Riêng (First Name)</th>
+          <th>Họ (Last Name)</th>
           <th>Số Điện Thoại</th>
           <th>Thao Tác</th>
         </tr>
@@ -106,7 +121,7 @@
         return arr[Math.floor(Math.random() * arr.length)];
       }
 
-      function generateMeaningfulRandomName() {
+      function generateMeaningfulRandomName(existingLastNames) {
         const prefixes = [
           "Al",
           "El",
@@ -118,6 +133,20 @@
           "Ja",
           "Mi",
           "Ly",
+          "Ro",
+          "Sam",
+          "Ken",
+          "Dav",
+          "Jes",
+          "Chri",
+          "Tho",
+          "Nic",
+          "Pat",
+          "Ste",
+          "Vic",
+          "Zer",
+          "Fox",
+          "Sil",
         ];
         const middles = [
           "vin",
@@ -130,6 +159,19 @@
           "lia",
           "cus",
           "lor",
+          "dric",
+          "mond",
+          "tin",
+          "per",
+          "ford",
+          "gar",
+          "well",
+          "ry",
+          "mont",
+          "ton",
+          "field",
+          "ham",
+          "sen",
         ];
         const suffixes = [
           "a",
@@ -142,26 +184,46 @@
           "y",
           "am",
           "an",
+          "el",
+          "es",
+          "ing",
+          "on",
+          "den",
+          "ski",
+          "ich",
+          "man",
+          "son",
+          "ter",
+          "ler",
+          "kin",
+          "lin",
         ];
-        const lastNames = [
-          "Taylor",
-          "Smith",
-          "Wilson",
-          "Johnson",
-          "Brown",
-          "Clark",
-          "Moore",
-          "King",
-        ];
+
+        let lastName;
+        do {
+          if (Math.random() < 0.5) {
+            lastName =
+              getRandomElement(prefixes) +
+              getRandomElement(middles) +
+              getRandomElement(suffixes);
+          } else {
+            lastName = getRandomElement(prefixes) + getRandomElement(suffixes);
+          }
+          lastName = lastName.charAt(0).toUpperCase() + lastName.slice(1);
+        } while (existingLastNames && existingLastNames.has(lastName));
 
         let firstName =
           getRandomElement(prefixes) +
           getRandomElement(middles) +
           getRandomElement(suffixes);
-        firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
-        const lastName = getRandomElement(lastNames);
 
-        return `${firstName} ${lastName}`;
+        firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+
+        return {
+          firstName: firstName,
+          lastName: lastName,
+          fullName: `${firstName} ${lastName}`,
+        };
       }
 
       const getRandomNumber = (min, max) =>
@@ -185,10 +247,29 @@
 
       function createNewDataList(count = 100) {
         const dataList = [];
+        const fullNameSet = new Set();
+        const lastNameSet = new Set();
+
         for (let i = 0; i < count; i++) {
+          let nameParts;
+          let isUnique = false;
+
+          do {
+            nameParts = generateMeaningfulRandomName(lastNameSet);
+
+            if (!fullNameSet.has(nameParts.fullName)) {
+              isUnique = true;
+            }
+          } while (!isUnique);
+
+          fullNameSet.add(nameParts.fullName);
+          lastNameSet.add(nameParts.lastName);
+
           dataList.push({
             id: Date.now() + i,
-            name: generateMeaningfulRandomName(),
+            initialIndex: i + 1,
+            firstName: nameParts.firstName,
+            lastName: nameParts.lastName,
             phone: generateRandomPhoneNumberUS(),
           });
         }
@@ -202,7 +283,18 @@
 
       function loadData() {
         const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-        return storedData ? JSON.parse(storedData) : null;
+        const data = storedData ? JSON.parse(storedData) : null;
+        if (
+          data &&
+          data.length > 0 &&
+          !data[0].hasOwnProperty("initialIndex")
+        ) {
+          data.forEach((item, index) => {
+            item.initialIndex = index + 1;
+          });
+          saveData(data);
+        }
+        return data;
       }
 
       function deleteRow(rowId) {
@@ -241,32 +333,65 @@
         }
       }
 
+      function copyToClipboard(text, element) {
+        navigator.clipboard.writeText(text).then(
+          () => {
+            const originalContent = element.innerHTML;
+            element.innerHTML = "✅";
+            element.style.color = "#2ecc71";
+
+            setTimeout(() => {
+              element.innerHTML = originalContent;
+              element.style.color = "#3498db";
+            }, 1000);
+          },
+          (err) => {
+            console.error("Could not copy text: ", err);
+            alert("Không thể sao chép. Vui lòng thử lại.");
+          }
+        );
+      }
+
       function renderTable(dataList) {
         const tableBody = document.querySelector("#dataTable tbody");
         tableBody.innerHTML = "";
 
-        dataList.forEach((item, index) => {
+        dataList.forEach((item) => {
           const row = tableBody.insertRow();
 
           const cellStt = row.insertCell();
-          cellStt.textContent = index + 1;
+          cellStt.textContent = item.initialIndex || "";
 
-          const cellName = row.insertCell();
-          cellName.textContent = item.name;
+          const cellFirstName = row.insertCell();
+          cellFirstName.innerHTML = `
+                    <div class="copy-container">
+                        <span>${item.firstName}</span>
+                        <span class="copy-icon" onclick="copyToClipboard('${item.firstName}', this)">📋</span>
+                    </div>
+                `;
+
+          const cellLastName = row.insertCell();
+          cellLastName.innerHTML = `
+                    <div class="copy-container">
+                        <span>${item.lastName}</span>
+                        <span class="copy-icon" onclick="copyToClipboard('${item.lastName}', this)">📋</span>
+                    </div>
+                `;
 
           const cellPhone = row.insertCell();
-          cellPhone.textContent = item.phone;
+          cellPhone.innerHTML = `
+                    <div class="copy-container">
+                        <span>${item.phone}</span>
+                        <span class="copy-icon" onclick="copyToClipboard('${item.phone}', this)">📋</span>
+                    </div>
+                `;
 
           const cellAction = row.insertCell();
           const deleteButton = document.createElement("button");
           deleteButton.className = "delete-btn";
           deleteButton.textContent = "Xóa";
           deleteButton.onclick = function () {
-            if (
-              confirm(`Bạn có chắc chắn muốn xóa dòng "${item.name}" không?`)
-            ) {
-              deleteRow(item.id);
-            }
+            deleteRow(item.id);
           };
           cellAction.appendChild(deleteButton);
         });
